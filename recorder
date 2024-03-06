@@ -5,7 +5,7 @@
 #
 # v3.1.1
 # Date: 6/03/2024
-# Copyright (C) 2024 Stéphane Leclerc (sleclerc@aweb.fr)
+# Copyright (C) 2024 by Stef
 
 # Usage: ./recorder
 # usage: ./recorder -f recorder.conf
