@@ -1,0 +1,14 @@
+Un son avec un score de {{AMPLITUDE_ADJUSTMENT}} et d'une durée de {{SOUND_LENGTH}} a été enregistré au {{PREFIX}}.
+
+Cliquez sur ce lien pour l'écouter : {{DOWNLOAD_LINK}}
+
+Tout son dont le score est inférieur à {{INPUT_THRESHOLD}} est supprimé automatiquement.
+
+Le site de stockage des fichiers sonores est protégé par un mot de passe :
+
+Login : local
+Mot de passe : 1777
+
+Vous pouvez aussi consulter l'ensemble des sons à cette adresse Web : {{URL_SERVER}}
+
+Vous pouvez écouter le flux de la soundbox en live sur {{URL_LOGIN}}.

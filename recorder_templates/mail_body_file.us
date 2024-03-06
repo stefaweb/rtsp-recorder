@@ -1,0 +1,14 @@
+A sound with a score of {{AMPLITUDE_ADJUSTMENT}} and a duration of {{SOUND_LENGTH}} has been recorded at {{PREFIX}}.
+
+Click on this link to listen to it: {{DOWNLOAD_LINK}}
+
+Any sound with a score lower than {{INPUT_THRESHOLD}} is automatically deleted.
+
+The site for storing sound files is password protected:
+
+Login: local
+Password: 1777
+
+You can also view all the sounds at this web address: {{URL_SERVER}}
+
+You can listen to the soundbox live stream on {{URL_LOGIN}}.
