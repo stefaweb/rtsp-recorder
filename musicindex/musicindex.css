@@ -28,7 +28,7 @@ th.Title a:after {
   top: 0;
   left: 0;
   content: "Name";
-  background-color: #ffeeba; 
+  background-color: #ffeeba;
 }
 
 th.Track a {
@@ -38,7 +38,7 @@ th.Track a {
 
 th.Track a:after {
   visibility: visible;
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   content: "Volume";
@@ -52,7 +52,7 @@ th.Album a {
 
 th.Album a:after {
   visibility: visible;
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   content: "Amplitude";
@@ -70,6 +70,20 @@ th.Artist a:after {
   top: 0;
   left: 0;
   content: "Device";
+  background-color: #ffeeba; /* Softer yellow for table titles */
+}
+
+th.Length a {
+  visibility: hidden;
+  position: relative;
+ }
+
+th.Length a:after {
+  visibility: visible;
+  position: relative;
+  top: 0;
+  left: 0;
+  content: "Duration";
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
@@ -305,7 +319,7 @@ td.Title {
 }
 
 td.Album {
-  text-align: left;
+  text-align: right;
 }
 
 td.Disc {
@@ -313,7 +327,7 @@ td.Disc {
 }
 
 td.Track {
-  text-align: left ;
+  text-align: right ;
 }
 
 td.Bitrate {
@@ -403,12 +417,17 @@ th.Select {
   text-align: left;
 }
 
+th.Artist {
+  text-align: left;
+}
+
 th.Title {
   text-align: left;
 }
 
 th.Album {
-  text-align: left;
+  width: 70px;
+  text-align: right;
 }
 
 th.Bitrate {
@@ -436,7 +455,7 @@ th.Filetype {
 }
 
 th.Track {
-  text-align: left;
+  text-align: right;
 }
 
 img {
