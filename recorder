@@ -3,8 +3,8 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
 #
-# v3.1.1
-# Date: 6/03/2024
+# v3.1.2b1
+# Date: 7/03/2024
 # Copyright (C) 2024 by Stef
 
 # Usage: ./recorder
@@ -126,11 +126,13 @@ check_dependencies() {
 
 # Record the audio stream.
 record_audio() {
+	xgd_string=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
+	XDG_RUNTIME_DIR="/tmp/recorder-$xgd_string"
 	local attempt_count=0
 	local MAX_ATTEMPTS=3
 
 	while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
-		cvlc $RTSP_URL --rtsp-user=$RTSP_USER --rtsp-pwd=$RTSP_PASSWORD --run-time $DURATION \
+		cvlc -q $RTSP_URL --rtsp-user=$RTSP_USER --rtsp-pwd=$RTSP_PASSWORD --run-time $DURATION \
 				--sout "#transcode{acodec=mp3,ab="$RTSP_BITE_RATE",samplerate="$RTSP_SAMPLE_RATE",channels=1}:std{access=file,mux=raw,dst=${OUTPUT_PATH}}" \
 				--rtp-timeout=10 --sap-timeout=10 vlc://quit >> "$LOGFILE" 2>&1
 
@@ -149,6 +151,7 @@ record_audio() {
 		send_error_email
 		exit 1
 	fi
+	rm -fR "$XDG_RUNTIME_DIR"
 }
 
 # Main script starts here.
