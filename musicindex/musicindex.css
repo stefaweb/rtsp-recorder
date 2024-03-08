@@ -17,12 +17,12 @@ a.rdir {
     display: none;
 }
 
-th.Title a {
+th.Title {
   visibility: hidden;
   position: relative;
  }
 
-th.Title a:after {
+th.Title:after {
   visibility: visible;
   position: absolute;
   top: 0;
@@ -31,12 +31,12 @@ th.Title a:after {
   background-color: #ffeeba;
 }
 
-th.Track a {
+th.Track {
   visibility: hidden;
   position: relative;
  }
 
-th.Track a:after {
+th.Track:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -45,12 +45,12 @@ th.Track a:after {
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Album a {
+th.Album {
   visibility: hidden;
   position: relative;
  }
 
-th.Album a:after {
+th.Album:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -59,26 +59,26 @@ th.Album a:after {
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Artist a {
+th.Artist {
   visibility: hidden;
   position: relative;
  }
 
-th.Artist a:after {
+th.Artist:after {
   visibility: visible;
-  position: absolute;
+  position: relative;
   top: 0;
   left: 0;
   content: "Device";
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Length a {
+th.Length {
   visibility: hidden;
   position: relative;
  }
 
-th.Length a:after {
+th.Length:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -330,6 +330,10 @@ td.Track {
   text-align: right ;
 }
 
+td.Artist {
+  text-align: right ;
+}
+
 td.Bitrate {
   text-align: right;
 }
@@ -418,7 +422,7 @@ th.Select {
 }
 
 th.Artist {
-  text-align: left;
+  text-align: right;
 }
 
 th.Title {
@@ -426,7 +430,7 @@ th.Title {
 }
 
 th.Album {
-  width: 70px;
+  #width: 70px;
   text-align: right;
 }
 
