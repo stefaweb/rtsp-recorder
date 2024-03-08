@@ -1,6 +1,6 @@
 # Changelog recorder script
 
-Version [3.1.2b2] (8-03-2024)
+Version [3.1.2] (8-03-2024)
 
 - For VLC, added XDG_RUNTIME_DIR definition to suppress warning messages during cvlc starting.
 - Added PID number stamp in log_message.
