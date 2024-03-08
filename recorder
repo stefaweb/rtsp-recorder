@@ -3,8 +3,8 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
 #
-# v3.1.2b3
-# Date: 7/03/2024
+# v3.1.2
+# Date: 8/03/2024
 # Copyright (C) 2024 by Stef
 
 # Usage: ./recorder
