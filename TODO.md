@@ -1,0 +1,2 @@
+- Add more languages.
+- CSS don't work with Search in Musicindex.
