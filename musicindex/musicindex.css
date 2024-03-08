@@ -17,12 +17,12 @@ a.rdir {
     display: none;
 }
 
-th.Title {
+th.Title a {
   visibility: hidden;
   position: relative;
  }
 
-th.Title:after {
+th.Title a:after {
   visibility: visible;
   position: absolute;
   top: 0;
@@ -31,12 +31,12 @@ th.Title:after {
   background-color: #ffeeba;
 }
 
-th.Track {
+th.Track a {
   visibility: hidden;
   position: relative;
  }
 
-th.Track:after {
+th.Track a:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -45,12 +45,12 @@ th.Track:after {
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Album {
+th.Album a {
   visibility: hidden;
   position: relative;
  }
 
-th.Album:after {
+th.Album a:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -59,12 +59,12 @@ th.Album:after {
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Artist {
+th.Artist a {
   visibility: hidden;
   position: relative;
  }
 
-th.Artist:after {
+th.Artist a:after {
   visibility: visible;
   position: relative;
   top: 0;
@@ -73,12 +73,12 @@ th.Artist:after {
   background-color: #ffeeba; /* Softer yellow for table titles */
 }
 
-th.Length {
+th.Length a {
   visibility: hidden;
   position: relative;
  }
 
-th.Length:after {
+th.Length a:after {
   visibility: visible;
   position: relative;
   top: 0;
