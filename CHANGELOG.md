@@ -1,13 +1,14 @@
 # Changelog recorder script
 
-Version [3.1.2b2] (7-03-2024)
+Version [3.1.2b2] (8-03-2024)
 
-- For VLC, add XDG_RUNTIME_DIR definition to suppress warning messages during cvlc starting.
-- Added PID number at start of logs.
+- For VLC, added XDG_RUNTIME_DIR definition to suppress warning messages during cvlc starting.
+- Added PID number stamp in log_message.
+- Update of musicindex.css.
 
 Version [3.1.1] (5-03-2024)
 
-- Add sound file duration in email template.
+- Added sound file duration in email template.
 - Update of musicindex.css.
 - Directory email_templates has been renamed to recorder_templates.
 - Localization in English and French for Email Subject and Body templates.
@@ -15,7 +16,7 @@ Version [3.1.1] (5-03-2024)
 - Added Content-Type to mail header.
 - Localization in English of log_message and internal messages.
 - Localization of minutes and seconds in body message.
-- Added SILENT_SOUND_DURATION parameter in recorder.conf. It permit to delete silent sound file if SOUND_LENGTH is smaller or equal than SILENT_SOUND_DURATION.
+- Added SILENT_SOUND_DURATION parameter in recorder.conf. Allows to define the minimum duration of the silent sound file to keep.
 
 Version [3.1.0] (2-03-2024)
 

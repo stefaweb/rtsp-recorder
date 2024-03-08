@@ -3,7 +3,7 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
 #
-# v3.1.2b2
+# v3.1.2b3
 # Date: 7/03/2024
 # Copyright (C) 2024 by Stef
 
@@ -20,7 +20,7 @@ send_error_email() {
 		# Read the subject from the file and replace {{PREFIX}} with the actual value of $PREFIX
 		EMAIL_SUBJECT_ERROR=$(sed "s|{{PREFIX}}|$PREFIX|g" "$EMAIL_SUBJECT_ERROR_FILE")
 	else
-		log_message "($$) - ($$) - Error: The error email subject file ${EMAIL_SUBJECT_ERROR_FILE} is not found."
+		log_message "($$) - Error: The error email subject file ${EMAIL_SUBJECT_ERROR_FILE} is not found."
 		# Use a default subject in case of error reading the fil
 		EMAIL_SUBJECT_ERROR="Error with the recorder script for $PREFIX."
 	fi
