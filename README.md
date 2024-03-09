@@ -22,7 +22,7 @@ The script operates using a `recorder.conf` configuration file, which should be 
 
 Here are the main parameters to configure:
 
-- `LANG`: Choose "us" or "fr" depending of the desired language.
+- `LANG`: Choose "us", "de" or "fr" depending of the desired language.
 - `PREFIX`: Prefix for naming the recorded files.
 - `URL_SERVER`: The URL of the server where the sounds are stored.
 - `RTSP_URL`: The RTSP stream URL.

@@ -19,7 +19,7 @@ Le script fonctionne en utilisant un fichier de configuration `recorder.conf` qu
 
 Voici les principaux paramètres à configurer :
 
-- `LANG` : Choisir "us" ou "fr" en fonction de la langue désirée.
+- `LANG` : Choisir "us", "de" ou "fr" en fonction de la langue désirée.
 - `PREFIX` : préfixe pour le nommage des fichiers enregistrés.
 - `URL_SERVER` : l'URL du serveur ou sont stocké les sons.
 - `RTSP_URL` : l'URL du flux RTSP.
