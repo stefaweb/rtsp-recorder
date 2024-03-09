@@ -1,5 +1,10 @@
 # Changelog recorder script
 
+Version [3.1.3b1] (9-03-2024)
+
+- Localization in German language for Email Subject and Body templates (.de).
+- Added a routine to check the configuration file.
+
 Version [3.1.2] (8-03-2024)
 
 - For VLC, added XDG_RUNTIME_DIR definition to suppress warning messages during cvlc starting.

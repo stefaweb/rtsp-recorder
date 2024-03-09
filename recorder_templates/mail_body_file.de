@@ -1,0 +1,14 @@
+Ein Ton mit einem Wert von {{AMPLITUDE_ADJUSTMENT}} und einer Dauer von {{SOUND_LENGTH}} wurde bei {{PREFIX}} aufgezeichnet.
+
+Klicken Sie auf diesen Link, um ihn anzuhören: {{DOWNLOAD_LINK}}
+
+Jeder Ton mit einem Wert unter {{INPUT_THRESHOLD}} wird automatisch gelöscht.
+
+Die Website zur Speicherung von Tonaufnahmen ist passwortgeschützt:
+
+Anmeldung: local
+Passwort: 1777
+
+Sie können auch alle Töne unter dieser Webadresse ansehen: {{URL_SERVER}}
+
+Sie können den Soundbox-Livestream auf {{URL_LOGIN}} hören.

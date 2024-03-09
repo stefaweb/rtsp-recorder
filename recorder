@@ -3,8 +3,8 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
 #
-# v3.1.2
-# Date: 8/03/2024
+# v3.1.3b1
+# Date: 9/03/2024
 # Copyright (C) 2024 by Stef
 
 # Usage: ./recorder
@@ -182,6 +182,21 @@ main() {
 		fi
 		source "$CONFIG_FILE"
 	fi
+
+	# List of required variables
+	required_vars=(
+	  LANG PREFIX URL_SERVER RTSP_URL RTSP_SAMPLE_RATE RTSP_BITE_RATE RTSP_USER RTSP_PASSWORD
+	  DIR_WEB DIR_LOG DIR_PID DIR_TEMPLATE EMAIL_FROM EMAIL_TO EMAIL_TO_SUPPORT
+	  INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD
+	)
+
+	# Check for required variables
+	for var in "${required_vars[@]}"; do
+	  if [ -z "${!var}" ]; then
+	    echo "Error: Variable $var is not set in configuration file."
+	    exit 1
+	  fi
+	done
 
 	# Initialization of local parameters.
 	FILE_NAME="${PREFIX}_$(date +%Y-%m-%d_%H-%M)_original.mp3"
