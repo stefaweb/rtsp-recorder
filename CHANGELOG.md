@@ -1,5 +1,13 @@
 # Changelog recorder script
 
+Version [3.1.4] (10-02-2026)
+
+- DELETE_ORIGINAL variable renamed KEEP_ORIGINAL in conf file.
+- Added KEEP_PROCESSED_FILE variable in conf file. Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
+- Added missing tests for KEEP_ORIGINAL.
+- Added tests for KEEP_PROCESSED_FILE.
+- Better managment in case of errors with SOX command.
+
 Version [3.1.3] (9-03-2024)
 
 - Localization in German language for Email Subject and Body templates (.de).

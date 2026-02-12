@@ -3,15 +3,20 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
 #
-# v3.1.3
-# Date: 9/03/2024
-# Copyright (C) 2024 by Stef
+# v3.1.4
+# Date: 10/02/2026
+# Copyright (C) 2024-2026 by Stef
 
 # Usage: ./recorder
 # usage: ./recorder -f recorder.conf
 #
-# Needed binary: vlc, sox, id3v2, libsox-fmt-mp3
+# Needed binary: vlc, sox, id3v2, libsox-fmt-base, libsox-fmt-mp3
 # For multimeida packages use this repository: https://www.deb-multimedia.org
+# 
+# Best for voice with rtsp
+# Codec: AAC
+# Sample rate: 32 kHz
+# Bit rate: 64 kbits/s
 
 # Function to send an error message.
 send_error_email() {
@@ -187,7 +192,8 @@ main() {
 	required_vars=(
 	  LANG PREFIX URL_SERVER RTSP_URL RTSP_SAMPLE_RATE RTSP_BITE_RATE RTSP_USER RTSP_PASSWORD
 	  DIR_WEB DIR_LOG DIR_PID DIR_TEMPLATE EMAIL_FROM EMAIL_TO EMAIL_TO_SUPPORT
-	  INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD
+	  INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD KEEP_ORIGINAL REMOVE_SILENCE
+	  KEEP_PROCESSED_FILE
 	)
 
 	# Check for required variables.
@@ -236,82 +242,103 @@ main() {
 	log_message "($$) - Registering Volume adjustment for ${PREFIX}: ${VOLUME_ADJUSTMENT}"
 
 	# Delete the file if $AMPLITUDE_ADJUSTMENT is smaller than $INPUT_THRESHOLD.
-	if (( $(echo "$AMPLITUDE_ADJUSTMENT < $INPUT_THRESHOLD" | bc -l) )); then
-		# Delete the file if $AMPLITUDE_ADJUSTMENT is smaller than $INPUT_THRESHOLD.
-		log_message "($$) - The adjustment volume ${AMPLITUDE_ADJUSTMENT} is below the threshold ${INPUT_THRESHOLD}. Deleting file ${FILE_NAME}"
-		rm "$OUTPUT_PATH"
-		log_message "($$) - Original sound file deleted: $OUTPUT_PATH"
+		if (( $(echo "$AMPLITUDE_ADJUSTMENT < $INPUT_THRESHOLD" | bc -l) )); then
+			log_message "($$) - The adjustment volume ${AMPLITUDE_ADJUSTMENT} is below the threshold ${INPUT_THRESHOLD}."
+
+		    if [ "$KEEP_ORIGINAL" != "true" ]; then
+				rm "$OUTPUT_PATH"
+		        log_message "($$) - Original sound file deleted: $OUTPUT_PATH"
+		    else
+		        log_message "($$) - Original sound file preserved by configuration."
+		    fi
+
 	else
+		# Process recorded audio file
 		if [ "$REMOVE_SILENCE" = true ]; then
-			# Use sox to remove silences.
-			# Silence parameters should be adjusted according to your needs.
+			# Remove silences using SoX
 			PROCESSED_FILE_NAME="${OUTPUT_PATH%_original.mp3}"
 			PROCESSED_OUTPUT_PATH="${PROCESSED_FILE_NAME}_silence.mp3"
 			SOX_CMD_RUN="sox \"$OUTPUT_PATH\" \"$PROCESSED_OUTPUT_PATH\" $SOX_CMD"
-			log_message "($$) - Executing sox command to remove silences: $SOX_CMD_RUN"
+			log_message "($$) - Executing SoX to remove silences: $SOX_CMD_RUN"
 
-			# Execute the sox command.
 			eval $SOX_CMD_RUN
 
-			# Check if the sox command succeeded and if the processed file exists.
+			# Check if SoX succeeded and the processed file exists
 			if [ $? -eq 0 ] && [ -f "$PROCESSED_OUTPUT_PATH" ]; then
-				log_message "($$) - Silence removal processing completed successfully. The processed file is: ${PROCESSED_FILE_NAME}"
+				log_message "($$) - Silence removal completed successfully: $PROCESSED_OUTPUT_PATH"
 
-				# Renames the file by removing "_original" from its name.
-				PROCESSED_OUTPUT_PATH_WITHOUT_EXT="${PROCESSED_OUTPUT_PATH%_silence.mp3}"
-				NEW_PROCESSED_OUTPUT_PATH="${PROCESSED_OUTPUT_PATH_WITHOUT_EXT}.mp3"
+				# Rename processed file by removing "_silence" suffix
+				NEW_PROCESSED_OUTPUT_PATH="${PROCESSED_FILE_NAME}.mp3"
 				mv "$PROCESSED_OUTPUT_PATH" "$NEW_PROCESSED_OUTPUT_PATH"
 
-				# Using id3v2 to set the Artist with the prefix (processed).
-				ID3V2_CMD_OUTPUT=$(/usr/bin/id3v2 -a "$PREFIX" $NEW_PROCESSED_OUTPUT_PATH 2>&1)
-				log_message "($$) - Registering Device (processed): ${PREFIX}"
-
-				# Using id3v2 to set the Track with the Volume ajustement.
-				ID3V2_VOLUME_CMD_OUTPUT=$(/usr/bin/id3v2 -T "$VOLUME_ADJUSTMENT" $NEW_PROCESSED_OUTPUT_PATH 2>&1)
-				log_message "($$) - Registering Volume adjustment for ${PREFIX} (processed): ${VOLUME_ADJUSTMENT}"
-
-				# Analyze the audio file with sox and extract the file lengh information.
-				FILE_LENGTH=$(sox ${NEW_PROCESSED_OUTPUT_PATH} -n stat 2>&1 | grep 'Length' | cut -d ':' -f 2 | tr -d ' ')
-				log_message "($$) - Capturing file duration (processed): ${FILE_LENGTH}"
-
-				if [ "$DELETE_ORIGINAL" = true ]; then
-					rm "$OUTPUT_PATH"
-					log_message "($$) - Original sound file deleted: $OUTPUT_PATH"
+				# Get processed file duration
+				if [ -f "$NEW_PROCESSED_OUTPUT_PATH" ]; then
+					FILE_LENGTH=$(sox "$NEW_PROCESSED_OUTPUT_PATH" -n stat 2>&1 | grep 'Length' | cut -d ':' -f 2 | tr -d ' ')
 				else
-					log_message "($$) - Deletion of the original sound file is disabled in the configuration."
+					FILE_LENGTH=0
 				fi
+				log_message "($$) - Processed file duration: $FILE_LENGTH s"
 
-				log_message "($$) - The adjustment volume ${AMPLITUDE_ADJUSTMENT} is less than or equal to the threshold ${INPUT_THRESHOLD}. The file has been renamed to ${NEW_PROCESSED_OUTPUT_PATH}."
-
+				# Handle files that are effectively silent
 				if (( $(echo "$FILE_LENGTH <= $SILENT_SOUND_DURATION" | bc -l) )); then
-					log_message "($$) - The file lenght $FILE_LENGTH is less than or equal than $SILENT_SOUND_DURATION. Sound file $NEW_PROCESSED_OUTPUT_PATH deleted."
-					rm "$NEW_PROCESSED_OUTPUT_PATH"
+					log_message "($$) - Processed file considered silent (<= ${SILENT_SOUND_DURATION}s)."
 
-				else
-					log_message "($$) - The file lenght $FILE_LENGTH is larger than $SILENT_SOUND_DURATION. The file $NEW_PROCESSED_OUTPUT_PATH is preserved."
-					# Send email notification.
-					send_file_email
+					if [ "$KEEP_PROCESSED_FILE" = "true" ]; then
+						log_message "($$) - KEEP_PROCESSED_FILE=true, so the silent processed file will be preserved: $NEW_PROCESSED_OUTPUT_PATH"
+					else
+						log_message "($$) - KEEP_PROCESSED_FILE=false, deleting the silent processed file: $NEW_PROCESSED_OUTPUT_PATH"
+						rm -f "$NEW_PROCESSED_OUTPUT_PATH"
+						log_message "($$) - Silent processed file deleted successfully: $NEW_PROCESSED_OUTPUT_PATH"
+					fi
+
+					# Delete original file if not required
+					if [ "$KEEP_ORIGINAL" != "true" ]; then
+						log_message "($$) - KEEP_ORIGINAL not true, deleting original file: $OUTPUT_PATH"
+						rm -f "$OUTPUT_PATH"
+						log_message "($$) - Original file deleted: $OUTPUT_PATH"
+					else
+						log_message "($$) - KEEP_ORIGINAL=true, original file preserved: $OUTPUT_PATH"
+					fi
+
+					# Do not send email for silent-only files
+					return
 				fi
-			else
-				send_error_email
-				rm "$PROCESSED_OUTPUT_PATH"
-				if [ "$DELETE_ORIGINAL" = true ]; then
-					rm "$OUTPUT_PATH"
-					log_message "($$) - Original sound file deleted: $OUTPUT_PATH"
+
+				# File contains sound, update metadata and optionally delete original
+				/usr/bin/id3v2 -a "$PREFIX" "$NEW_PROCESSED_OUTPUT_PATH" 2>&1
+				/usr/bin/id3v2 -T "$VOLUME_ADJUSTMENT" "$NEW_PROCESSED_OUTPUT_PATH" 2>&1
+				log_message "($$) - Metadata updated for processed file: $NEW_PROCESSED_OUTPUT_PATH"
+
+				# Delete original file if configuration specifies
+				if [ "$KEEP_ORIGINAL" != "true" ]; then
+					rm -f "$OUTPUT_PATH"
+					log_message "($$) - Original file deleted: $OUTPUT_PATH"
 				else
-					log_message "($$) - Deletion of the original sound file is disabled in the configuration."
+					log_message "($$) - Original file preserved: $OUTPUT_PATH"
+				fi
+
+				# Send notification email for files containing sound
+				send_file_email
+
+			else
+				# SoX failed or processed file missing
+				send_error_email
+				rm -f "$PROCESSED_OUTPUT_PATH"
+				if [ "$KEEP_ORIGINAL" != "true" ]; then
+					rm -f "$OUTPUT_PATH"
+					log_message "($$) - Original file deleted after processing failure: $OUTPUT_PATH"
+				else
+					log_message "($$) - Original file preserved after processing failure: $OUTPUT_PATH"
 				fi
 			fi
+
 		else
-			log_message "($$) - Silence removal is disabled. No silence processing will be performed."
-
-			# Remove "_original" from the file.
-			OUTPUT_PATH_WITHOUT_EXT="${OUTPUT_PATH%_original.mp3}"
-			NEW_OUTPUT_PATH="${OUTPUT_PATH_WITHOUT_EXT}.mp3"
+			# Silence removal disabled
+			NEW_OUTPUT_PATH="${OUTPUT_PATH%_original.mp3}.mp3"
 			mv "$OUTPUT_PATH" "$NEW_OUTPUT_PATH"
-			log_message "($$) - File renamed to indicate no silence has been removed: ${NEW_OUTPUT_PATH}"
+			log_message "($$) - Silence removal disabled, file renamed: $NEW_OUTPUT_PATH"
 
-			# Send email notification.
+			# Send notification email for all recorded files
 			send_file_email
 		fi
 	fi

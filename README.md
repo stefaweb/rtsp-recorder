@@ -10,7 +10,7 @@ The `recorder` script is designed for recording RTSP audio streams, especially f
 Before starting, ensure you have installed the following dependencies on your system:
 
 - VLC (`cvlc`)
-- Sox
+- SoX
 - ID3v2
 - libsox-fmt-mp3
 
@@ -35,9 +35,10 @@ Here are the main parameters to configure:
 - `INPUT_THRESHOLD`: Parameter for adjusting the trigger threshold.
 - `DURATION`: Recording duration (in seconds).
 - `SILENT_SOUND_DURATION`: Allows you to define the minimum duration of the silent sound file to keep (in seconds).
-- `DELETE_ORIGINAL`: Parameter to delete the original sound file.
-- `REMOVE_SILENCE`: Parameter to remove silences.
-- `SOX_CMD`: Sox command parameter to remove silences in MP3 files.
+- `KEEP_ORIGINAL`: Parameter to keep original sound file.
+- `KEEP_PROCESSED_FILE`: Parameter to keep silenced sound file. Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
+- `REMOVE_SILENCE` : Parameter to remove silences from sound file
+- `SOX_CMD`: sox command parameter to remove silences in MP3 files.
 
 ### Launching
 

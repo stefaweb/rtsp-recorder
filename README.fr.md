@@ -7,7 +7,7 @@ Le script `recorder` permet d'enregistrer des flux audio RTSP, notamment depuis 
 Avant de commencer, assurez-vous d'avoir installé les dépendances suivantes sur votre système :
 
 - VLC (`cvlc`)
-- Sox
+- SoX
 - ID3v2
 - libsox-fmt-mp3
 
@@ -32,8 +32,9 @@ Voici les principaux paramètres à configurer :
 - `INPUT_THRESHOLD` : paramètre pour l'ajustement du seuil de déclenchement (threshold).
 - `DURATION` : durée de l'enregistrement (en secondes).
 - `SILENT_SOUND_DURATION` : permet de définir la durée minimum du fichier son silencieux à conserver (en seconde).
-- `DELETE_ORIGINAL` : paramètre pour supprimer le fichier sonore original.
-- `REMOVE_SILENCE` : paramètre pour supprimer les silences.
+- `KEEP_ORIGINAL`:  paramètre pour garder le fichier sonore original.
+- `KEEP_PROCESSED_FILE`:  paramètre pour garder le fichier sonore sans silence. Attention, cette option peut générer un fichier audio vide et ilisible si le fichier audio d’origine ne contient que des silences.
+- `REMOVE_SILENCE` : paramètre pour supprimer les silences du fichier sonore.
 - `SOX_CMD` : paramètre de la commande sox pour supprimer les silences dans les fichiers MP3.
 
 ### Lancement
