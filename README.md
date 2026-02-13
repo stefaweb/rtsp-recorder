@@ -3,7 +3,7 @@
 
 # RTSP Recorder Script
 
-The `recorder` script is designed for recording RTSP audio streams, especially from devices like the AXIS C8110 audio recorder, and converting them into MP3 files. It also features functionalities for adjusting the trigger threshold, silencing removal, and sending email notifications.
+The `recorder` script is designed for recording RTSP audio streams, especially from devices like the AXIS C8110 or P8221 audio recorder, and converting them into MP3 files. It also features functionalities for adjusting the trigger threshold, silencing removal, and sending email notifications.
 
 ## Prerequisites
 
