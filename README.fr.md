@@ -24,7 +24,7 @@ Voici les principaux paramètres à configurer :
 - `URL_SERVER` : l'URL du serveur ou sont stocké les sons.
 - `RTSP_URL` : l'URL du flux RTSP.
 - `RTSP_SAMPLE_RATE` : fréquence d'échantillonnage (sampling rate) en Hz.
-- `RTSP_BITE_RATE` : quantité de données numériques transmises par unité de temps en kbits/s.
+- `RTSP_BIT_RATE` : quantité de données numériques transmises par unité de temps en kbits/s.
 - `RTSP_USER, RTSP_PASSWORD` : nom et mot de passe pour l'authentification RTSP.
 - `DIR_WEB`: chemin du répertoire de sortie pour les fichiers MP3.
 - `DIR_LOG, DIR_PID, DIR_TEMPLATE` : chemin du répertoire de sortie pour les fichiers systèmes (PID, email_templates, logs).
@@ -36,6 +36,7 @@ Voici les principaux paramètres à configurer :
 - `KEEP_PROCESSED_FILE`:  paramètre pour garder le fichier sonore sans silence. Attention, cette option peut générer un fichier audio vide et ilisible si le fichier audio d’origine ne contient que des silences.
 - `REMOVE_SILENCE` : paramètre pour supprimer les silences du fichier sonore.
 - `SOX_CMD` : paramètre de la commande sox pour supprimer les silences dans les fichiers MP3.
+- `SOX_GAIN`: Gain appliqué par SoX lors de la conversion MP3 finale (Valeur en dB).
 
 ### Lancement
 

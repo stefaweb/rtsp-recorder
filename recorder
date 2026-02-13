@@ -1,365 +1,315 @@
 #!/bin/bash
 #
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
-# To be used with Axis P8221, AXIS C8110 soundbox or any RTSP device with sound output
+# Supports Axis P8221, AXIS C8110 soundbox, or any RTSP device with audio output
 #
-# v3.1.4
-# Date: 10/02/2026
+# v3.2.0
+# Date: 13/02/2026
 # Copyright (C) 2024-2026 by Stef
 
 # Usage: ./recorder
-# usage: ./recorder -f recorder.conf
+# Usage with custom config: ./recorder -f recorder.conf
 #
-# Needed binary: vlc, sox, id3v2, libsox-fmt-base, libsox-fmt-mp3
-# For multimeida packages use this repository: https://www.deb-multimedia.org
-# 
-# Best for voice with rtsp
+# Required binaries: vlc, sox, id3v2, libsox-fmt-base, libsox-fmt-mp3
+# Repository for multimedia packages: https://www.deb-multimedia.org
+#
+# Recommended for voice streaming
 # Codec: AAC
 # Sample rate: 32 kHz
 # Bit rate: 64 kbits/s
 
-# Function to send an error message.
+# ---------------------------
+# Functions
+# ---------------------------
+
 send_error_email() {
-	EMAIL_SUBJECT_ERROR_FILE="${DIR_TEMPLATE}/email_subject_error.${LANG}"
-	if [ -f "$EMAIL_SUBJECT_ERROR_FILE" ]; then
-		# Read the subject from the file and replace {{PREFIX}} with the actual value of $PREFIX
-		EMAIL_SUBJECT_ERROR=$(sed "s|{{PREFIX}}|$PREFIX|g" "$EMAIL_SUBJECT_ERROR_FILE")
-	else
-		log_message "($$) - Error: The error email subject file ${EMAIL_SUBJECT_ERROR_FILE} is not found."
-		# Use a default subject in case of error reading the fil
-		EMAIL_SUBJECT_ERROR="Error with the recorder script for $PREFIX."
-	fi
+    EMAIL_SUBJECT_ERROR_FILE="${DIR_TEMPLATE}/email_subject_error.${LANG}"
+    if [ -f "$EMAIL_SUBJECT_ERROR_FILE" ]; then
+        EMAIL_SUBJECT_ERROR=$(sed "s|{{PREFIX}}|$PREFIX|g" "$EMAIL_SUBJECT_ERROR_FILE")
+    else
+        log_message "($$) - ERROR: Error email subject file ${EMAIL_SUBJECT_ERROR_FILE} not found."
+        EMAIL_SUBJECT_ERROR="Error in recorder script for $PREFIX."
+    fi
 
-	EMAIL_BODY_ERROR_PATH="${DIR_TEMPLATE}/email_body_error.${LANG}"
-	if [ -f "$EMAIL_BODY_ERROR_PATH" ]; then
-		EMAIL_BODY_ERROR=$(<"$EMAIL_BODY_ERROR_PATH")
-		echo "$EMAIL_BODY_ERROR" | mail -s "$EMAIL_SUBJECT_ERROR" -a "From: $EMAIL_FROM" -a "Content-Type: text/plain; charset=\"UTF-8\"" "$EMAIL_TO_SUPPORT"
-		log_message "($$) - Error email sent to ${EMAIL_TO_SUPPORT} from ${EMAIL_FROM} with the subject '${EMAIL_SUBJECT_ERROR}' and the body from ${EMAIL_BODY_ERROR_PATH}"
-	else
-		log_message "($$) - Error: The error email body file ${EMAIL_BODY_ERROR_PATH} is not found."
-	fi
+    EMAIL_BODY_ERROR_PATH="${DIR_TEMPLATE}/email_body_error.${LANG}"
+    if [ -f "$EMAIL_BODY_ERROR_PATH" ]; then
+        EMAIL_BODY_ERROR=$(<"$EMAIL_BODY_ERROR_PATH")
+        echo "$EMAIL_BODY_ERROR" | mail -s "$EMAIL_SUBJECT_ERROR" -a "From: $EMAIL_FROM" -a "Content-Type: text/plain; charset=\"UTF-8\"" "$EMAIL_TO_SUPPORT"
+        log_message "($$) - Error email sent to ${EMAIL_TO_SUPPORT} from ${EMAIL_FROM} with subject '${EMAIL_SUBJECT_ERROR}'"
+    else
+        log_message "($$) - ERROR: Error email body file ${EMAIL_BODY_ERROR_PATH} not found."
+    fi
 }
 
-# Function to send a message when a file contains sound.
 send_file_email() {
-	EMAIL_SUBJECT_FILE_PATH="${DIR_TEMPLATE}/email_subject_file.${LANG}"
-	if [ -f "$EMAIL_SUBJECT_FILE_PATH" ]; then
-		# Read the subject from the file and replace {{PREFIX}} with the actual value of $PREFIX.
-		EMAIL_SUBJECT_FILE=$(sed "s|{{PREFIX}}|$PREFIX|g" "$EMAIL_SUBJECT_FILE_PATH")
-	else
-		log_message "($$) - Error: The email subject file ${EMAIL_SUBJECT_FILE_PATH} is not found."
-		# Use a default subject in case of error reading the file.
-		EMAIL_SUBJECT_FILE="SOUND ALERT: Sounds at $PREFIX"
-	fi
+    EMAIL_SUBJECT_FILE_PATH="${DIR_TEMPLATE}/email_subject_file.${LANG}"
+    if [ -f "$EMAIL_SUBJECT_FILE_PATH" ]; then
+        EMAIL_SUBJECT_FILE=$(sed "s|{{PREFIX}}|$PREFIX|g" "$EMAIL_SUBJECT_FILE_PATH")
+    else
+        log_message "($$) - ERROR: Email subject file ${EMAIL_SUBJECT_FILE_PATH} not found."
+        EMAIL_SUBJECT_FILE="SOUND ALERT: Sounds at $PREFIX"
+    fi
 
-	# Load body file path values
-	EMAIL_BODY_FILE_PATH="${DIR_TEMPLATE}/email_body_file.${LANG}"
+    EMAIL_BODY_FILE_PATH="${DIR_TEMPLATE}/email_body_file.${LANG}"
+    MINUTES_FILE_PATH="${DIR_TEMPLATE}/minutes.${LANG}"
+    SECONDS_FILE_PATH="${DIR_TEMPLATE}/seconds.${LANG}"
 
-	# Load minute localized values
-	MINUTES_FILE_PATH="${DIR_TEMPLATE}/minutes.${LANG}"
+    # Use a default minutes localization in case of error reading the file.
+    minutes_loc="minute(s)"
 
-	if [ -f "$MINUTES_FILE_PATH" ]; then
-		# Read the minutes localization from the file.
-		minutes_loc=$(<"$MINUTES_FILE_PATH")
-	else
-		log_message "($$) - Error: The minutes file ${MINUTES_FILE_PATH} is not found."
-		# Use a default minutes localization in case of error reading the file.
-		minutes_loc="minutes(s)"
-	fi
+    # Use a default seconds localization in case of error reading the file.
+    seconds_loc="second(s)"
 
-	# Load second localized values
-	SECONDS_FILE_PATH="${DIR_TEMPLATE}/seconds.${LANG}"
+    [ -f "$MINUTES_FILE_PATH" ] && minutes_loc=$(<"$MINUTES_FILE_PATH")
+    [ -f "$SECONDS_FILE_PATH" ] && seconds_loc=$(<"$SECONDS_FILE_PATH")
 
-	if [ -f "$SECONDS_FILE_PATH" ]; then
-		# Read the seconds localization from the file.
-		seconds_loc=$(<"$SECONDS_FILE_PATH")
-	else
-		log_message "($$) - Error: The seconds file ${SECONDS_FILE_PATH} is not found."
-		# Use a default seconds localization in case of error reading the file.
-		seconds_loc="second(s)"
-	fi
+    if [ -f "$EMAIL_BODY_FILE_PATH" ]; then
+        FILE_LENGTH_SHORT=$(printf "%.2f" $FILE_LENGTH)
+        if (( $(echo "$FILE_LENGTH_SHORT >= 60" | bc -l) )); then
+            minutes=$(echo "$FILE_LENGTH_SHORT / 60" | bc)
+            seconds=$(echo "$FILE_LENGTH_SHORT - ($minutes * 60)" | bc -l)
+            seconds_formatted=$(printf "%.0f" $seconds)
+            SOUND_LENGTH="${minutes} $minutes_loc $seconds_formatted $seconds_loc"
+        else
+            SOUND_LENGTH=$(printf "%.0f" $FILE_LENGTH_SHORT)" $seconds_loc"
+        fi
 
-	if [ -f "$EMAIL_BODY_FILE_PATH" ]; then
-		FILE_LENGTH_SHORT=$(printf "%.2f" $FILE_LENGTH)
-		# Convert to minutes and seconds if it's greater than or equal to 60 seconds
-		if (( $(echo "$FILE_LENGTH_SHORT >= 60" | bc -l) )); then
-		    minutes=$(echo "$FILE_LENGTH_SHORT / 60" | bc)
-		    seconds=$(echo "$FILE_LENGTH_SHORT - ($minutes * 60)" | bc)
-		    # Directly format seconds to an integer, removing any decimal part
-		    seconds_formatted=$(printf "%.0f" $seconds)
-		    SOUND_LENGTH="${minutes} $minutes_loc $seconds_formatted $seconds_loc"
-		else
-		    # For values less than 60 seconds, directly show the original length as an integer
-		    SOUND_LENGTH=$(printf "%.0f" $FILE_LENGTH_SHORT)" $seconds_loc"
-		fi
+        URL_LOGIN=$(echo "$RTSP_URL" | sed "s|rtsp://|&$RTSP_USER:$RTSP_PASSWORD@|")
+        FILE_NAME_WITHOUT_ORIGINAL="${FILE_NAME%_original.wav}"
+        NEW_FILE_NAME="${FILE_NAME_WITHOUT_ORIGINAL}.mp3"
+        DOWNLOAD_LINK="${URL_SERVER}/${NEW_FILE_NAME}"
+        AMPLITUDE_ADJUSTMENT_SHORT=$(printf "%.3f" $AMPLITUDE_ADJUSTMENT)
 
-		URL_LOGIN=$(echo "$RTSP_URL" | sed "s|rtsp://|&$RTSP_USER:$RTSP_PASSWORD@|")
-		FILE_NAME_WITHOUT_ORIGINAL="${FILE_NAME%_original.mp3}"
-		NEW_FILE_NAME="${FILE_NAME_WITHOUT_ORIGINAL}.mp3"
-		DOWNLOAD_LINK="${URL_SERVER}/${NEW_FILE_NAME}"
-		AMPLITUDE_ADJUSTMENT_SHORT=$(printf "%.3f" $AMPLITUDE_ADJUSTMENT)
-		EMAIL_BODY_FILE=$(sed -e "s|{{AMPLITUDE_ADJUSTMENT}}|$AMPLITUDE_ADJUSTMENT_SHORT|g" \
-					-e "s|{{SOUND_LENGTH}}|$SOUND_LENGTH|g" \
-					-e "s|{{PREFIX}}|$PREFIX|g" \
-					-e "s|{{INPUT_THRESHOLD}}|$INPUT_THRESHOLD|g" \
-					-e "s|{{DOWNLOAD_LINK}}|$DOWNLOAD_LINK|g" \
-					-e "s|{{URL_SERVER}}|$URL_SERVER|g" \
-					-e "s|{{URL_LOGIN}}|$URL_LOGIN|g" "$EMAIL_BODY_FILE_PATH")
+        EMAIL_BODY_FILE=$(sed -e "s|{{AMPLITUDE_ADJUSTMENT}}|$AMPLITUDE_ADJUSTMENT_SHORT|g" \
+                    -e "s|{{SOUND_LENGTH}}|$SOUND_LENGTH|g" \
+                    -e "s|{{PREFIX}}|$PREFIX|g" \
+                    -e "s|{{INPUT_THRESHOLD}}|$INPUT_THRESHOLD|g" \
+                    -e "s|{{DOWNLOAD_LINK}}|$DOWNLOAD_LINK|g" \
+                    -e "s|{{URL_SERVER}}|$URL_SERVER|g" \
+                    -e "s|{{URL_LOGIN}}|$URL_LOGIN|g" "$EMAIL_BODY_FILE_PATH")
 
-		echo "$EMAIL_BODY_FILE" | mail -s "$EMAIL_SUBJECT_FILE" -a "From: $EMAIL_FROM" -a "Content-Type: text/plain; charset=\"UTF-8\"" "$EMAIL_TO"
-		log_message "($$) - Notification email sent to ${EMAIL_TO} from ${EMAIL_FROM} with the subject '${EMAIL_SUBJECT_FILE}'"
-	else
-		log_message "($$) - Error: The email body file ${EMAIL_BODY_FILE_PATH} is not found."
-	fi
+        echo "$EMAIL_BODY_FILE" | mail -s "$EMAIL_SUBJECT_FILE" -a "From: $EMAIL_FROM" -a "Content-Type: text/plain; charset=\"UTF-8\"" "$EMAIL_TO"
+        log_message "($$) - Notification email sent to ${EMAIL_TO} from ${EMAIL_FROM} with subject '${EMAIL_SUBJECT_FILE}'"
+    else
+        log_message "($$) - ERROR: Email body file ${EMAIL_BODY_FILE_PATH} not found."
+    fi
 }
 
-# Function to log messages.
 log_message() {
-	echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOGFILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOGFILE"
 }
 
-# Check for dependencies.
 check_dependencies() {
-	local deps=("cvlc" "sox" "id3v2")
-	for cmd in "${deps[@]}"; do
-		if ! command -v $cmd &> /dev/null; then
-			log_message "($$) - Error: $cmd is not installed."
-			exit 1
-		fi
-	done
+    local deps=("cvlc" "sox" "id3v2" "bc" "awk")
+    for cmd in "${deps[@]}"; do
+        if ! command -v $cmd &> /dev/null; then
+            log_message "($$) - ERROR: $cmd is not installed."
+            exit 1
+        fi
+    done
 }
 
-# Record the audio stream.
 record_audio() {
-	xgd_string=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
-	XDG_RUNTIME_DIR="/tmp/recorder-$xgd_string"
-	local attempt_count=0
-	local MAX_ATTEMPTS=3
+    xgd_string=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
+    XDG_RUNTIME_DIR="/tmp/recorder-$xgd_string"
+    mkdir -p "$XDG_RUNTIME_DIR"
+    local attempt_count=0
+    local MAX_ATTEMPTS=3
 
-	while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
-		cvlc -q $RTSP_URL --rtsp-user=$RTSP_USER --rtsp-pwd=$RTSP_PASSWORD --run-time $DURATION \
-				--sout "#transcode{acodec=mp3,ab="$RTSP_BITE_RATE",samplerate="$RTSP_SAMPLE_RATE",channels=1}:std{access=file,mux=raw,dst=${OUTPUT_PATH}}" \
-				--rtp-timeout=10 --sap-timeout=10 vlc://quit >> "$LOGFILE" 2>&1
+    while [ $attempt_count -lt $MAX_ATTEMPTS ]; do
+        cvlc -q $RTSP_URL --rtsp-user=$RTSP_USER --rtsp-pwd=$RTSP_PASSWORD --run-time $DURATION \
+                --sout "#transcode{acodec=s16l,ab="$RTSP_BIT_RATE",samplerate="$RTSP_SAMPLE_RATE",channels=1}:std{access=file,mux=wav,dst=${OUTPUT_PATH}}" \
+                --rtp-timeout=10 --sap-timeout=10 vlc://quit >> "$LOGFILE" 2>&1
+        if [ -f "$OUTPUT_PATH" ]; then
+            log_message "($$) - Recording completed successfully: ${OUTPUT_PATH}"
+            break
+        else
+            log_message "($$) - ERROR: Recording failed. Retrying..."
+            ((attempt_count++))
+            sleep 10
+        fi
+    done
 
-		if [ -f "$OUTPUT_PATH" ]; then
-			log_message "($$) - Recording completed successfully: ${OUTPUT_PATH}"
-			break
-		else
-			log_message "($$) - Error: Recording failed. Attempting retry."
-			((attempt_count++))
-			sleep 10
-		fi
-	done
-
-	if [ $attempt_count -eq $MAX_ATTEMPTS ]; then
-		log_message "($$) - Maximum number of retries reached without success. Ending script."
-		send_error_email
-		exit 1
-	fi
-	rm -fR "$XDG_RUNTIME_DIR"
+    if [ $attempt_count -eq $MAX_ATTEMPTS ]; then
+        log_message "($$) - Maximum retries reached without success. Exiting."
+        send_error_email
+        exit 1
+    fi
+    rm -rf "$XDG_RUNTIME_DIR"
 }
 
-# Main script starts here.
+# ---------------------------
+# Main script
+# ---------------------------
+
 main() {
-	# Check if the script is run as root
-	if [ "$(id -u)" -eq 0 ]; then
-		echo "This script should not be run as root." >&2
-		exit 1
+    [ "$(id -u)" -eq 0 ] && { echo "Do not run this script as root." >&2; exit 1; }
+
+    CONFIG_FILE="/etc/recorder.conf"
+    while getopts "f:" opt; do
+        case $opt in
+        f) CONFIG_FILE="$OPTARG";;
+        \?) echo "Usage: cmd [-f recorder.conf]"; exit 1;;
+        esac
+    done
+
+    [ ! -f "$CONFIG_FILE" ] && { echo "Configuration file ($CONFIG_FILE) not found."; exit 1; }
+    source "$CONFIG_FILE"
+
+    if ! printf '%s\n' "$SILENT_SOUND_DURATION" | grep -Eq '^[0-9]+([.][0-9]+)?$'; then
+	log_message "($$) - ERROR: SILENT_SOUND_DURATION is not numeric"
+	exit 1
+    fi
+
+    required_vars=(LANG PREFIX URL_SERVER RTSP_URL RTSP_SAMPLE_RATE RTSP_BIT_RATE RTSP_USER
+    RTSP_PASSWORD DIR_WEB DIR_LOG DIR_PID DIR_TEMPLATE EMAIL_FROM EMAIL_TO EMAIL_TO_SUPPORT
+    INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD KEEP_ORIGINAL REMOVE_SILENCE
+    KEEP_PROCESSED_FILE)
+
+    for var in "${required_vars[@]}"; do
+      [ -z "${!var}" ] && { echo "Error: Variable $var is not set in configuration file."; exit 1; }
+    done
+
+    FILE_NAME="${PREFIX}_$(date +%Y-%m-%d_%H-%M)_original.wav"
+    OUTPUT_PATH="${DIR_WEB}/${FILE_NAME}"
+    PIDFILE="${DIR_PID}/recorder-${PREFIX}.pid"
+    LOGFILE="${DIR_LOG}/recorder-${PREFIX}.log"
+    echo $$ > "$PIDFILE"
+
+    check_dependencies
+    [ ! -d "$DIR_WEB" ] && mkdir -p "$DIR_WEB"
+
+	log_message "($$) - ############################################################"
+    log_message "($$) - ######### Starting recorder script for PID $$ #########"
+    log_message "($$) - Starting audio recording for ${PREFIX}."
+
+    # Record audio file
+    record_audio
+
+	VOLUME_ADJUSTMENT=$(sox "$OUTPUT_PATH" -n stat 2>&1 | awk -F: '/Volume adjustment/ {gsub(/ /,"",$2); print $2}')
+	AMPLITUDE_ADJUSTMENT=$(sox "$OUTPUT_PATH" -n stat 2>&1 | awk -F: '/Maximum amplitude/ {gsub(/ /,"",$2); print $2}')
+	FILE_LENGTH=$(sox "$OUTPUT_PATH" -n stat 2>&1 | awk -F: '/Length/ {gsub(/ /,"",$2); print $2}')
+	AMPLITUDE_DB=$(awk -v a="$AMPLITUDE_ADJUSTMENT" 'BEGIN { if (a<=0) printf "%.2f", -999; else printf "%.2f", 20*log(a)/log(10) }')
+
+    # ---------------------------
+    # Audio processing
+    # ---------------------------
+
+	# Convert original WAV to MP3 if KEEP_ORIGINAL=true
+	if [ "$KEEP_ORIGINAL" = "true" ]; then
+	    ORIGINAL_MP3="${OUTPUT_PATH%_original.wav}_original.mp3"
+	    log_message "($$) - Converting original WAV to MP3: $ORIGINAL_MP3"
+
+	    # Step 1: generate temporary MP3 without gain for id3v2
+	    TMP_MP3="${ORIGINAL_MP3%.mp3}_tmp.mp3"
+	    sox "$OUTPUT_PATH" -c 1 -t mp3 "$TMP_MP3" rate "$RTSP_SAMPLE_RATE"
+	    if [ $? -ne 0 ]; then
+	        log_message "($$) - ERROR: Failed to generate temporary MP3 for id3v2"
+	        send_error_email
+	    else
+	        # Step 2: compute amplitude only on non-silence portions (pseudo)
+	        # This requires Sox v14+; here we use trim/silence trick for active audio
+	        AMP_ACTIVE=$(sox "$OUTPUT_PATH" -n stat 2>&1 | awk -F: '/Maximum amplitude/ {gsub(/ /,"",$2); print $2}')
+
+	        # Step 3: apply metadata to TMP_MP3
+	        /usr/bin/id3v2 -a "$PREFIX" -A "$AMP_ACTIVE" -T "$VOLUME_ADJUSTMENT" "$TMP_MP3" 2>&1
+	        log_message "($$) - Metadata applied to temporary MP3: $TMP_MP3"
+
+	        # Step 4: rename TMP_MP3 to final original MP3
+	        mv "$TMP_MP3" "$ORIGINAL_MP3"
+
+	        # Step 5: apply gain if configured
+	        if [ -n "$SOX_GAIN" ]; then
+	            TMP_GAIN="${ORIGINAL_MP3%.mp3}_gain.mp3"
+	            sox "$ORIGINAL_MP3" -c 1 -t mp3 "$TMP_GAIN" gain $SOX_GAIN
+	            mv "$TMP_GAIN" "$ORIGINAL_MP3"
+	            log_message "($$) - Gain applied to $ORIGINAL_MP3"
+	        else
+	            log_message "($$) - No volume adjustment for original MP3"
+	        fi
+
+	        # Optional: log amplitude in dB
+	        AMPLITUDE_DB=$(awk -v a="$AMP_ACTIVE" 'BEGIN { if (a<=0) printf "%.2f", -999; else printf "%.2f", 20*log(a)/log(10) }')
+	        log_message "($$) - Amplitude max for $ORIGINAL_MP3 (dB): $AMPLITUDE_DB"
+	    fi
 	fi
 
-	# Initialization of parameters.
-	CONFIG_FILE="/etc/recorder.conf"
+    # Skip file if amplitude below threshold
+    if (( $(echo "$AMPLITUDE_ADJUSTMENT < $INPUT_THRESHOLD" | bc -l) )); then
+        log_message "($$) - Amplitude ${AMPLITUDE_ADJUSTMENT} below threshold ${INPUT_THRESHOLD}, ignoring file."
+        [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
+        log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
+        return
+    fi
 
-	while getopts "f:" opt; do
-		case $opt in
-		f) CONFIG_FILE="$OPTARG";;
-		\?) echo "Usage: cmd [-f recorder.conf]"
-		exit 1;;
-		esac
-	done
+    PROCESSED_FILE_NAME="${OUTPUT_PATH%_original.wav}"
+    if [ "$REMOVE_SILENCE" = true ]; then
+        PROCESSED_WAV="${PROCESSED_FILE_NAME}_silence.wav"
+        log_message "($$) - Removing silence: $PROCESSED_WAV"
 
-	if [ -z "$CONFIG_FILE" ]; then
-		echo "No configuration file specified. By default, the file should be located in /etc/recorder.conf."
-	else
-		if [ ! -f "$CONFIG_FILE" ]; then
-			echo "The specified configuration file ($CONFIG_FILE) is not found."
-		exit 1
-		fi
-		source "$CONFIG_FILE"
+        sox "$OUTPUT_PATH" "$PROCESSED_WAV" $SOX_CMD
+
+	if [ $? -ne 0 ] || [ ! -f "$PROCESSED_WAV" ]; then
+	    log_message "($$) - ERROR: Silence removal failed"
+	    send_error_email
+	    [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
+	    return
 	fi
 
-	# List of required variables.
-	required_vars=(
-	  LANG PREFIX URL_SERVER RTSP_URL RTSP_SAMPLE_RATE RTSP_BITE_RATE RTSP_USER RTSP_PASSWORD
-	  DIR_WEB DIR_LOG DIR_PID DIR_TEMPLATE EMAIL_FROM EMAIL_TO EMAIL_TO_SUPPORT
-	  INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD KEEP_ORIGINAL REMOVE_SILENCE
-	  KEEP_PROCESSED_FILE
-	)
+	NEW_WAV="${PROCESSED_FILE_NAME}.wav"
+        mv "$PROCESSED_WAV" "$NEW_WAV"
+    else
+        NEW_WAV="${PROCESSED_FILE_NAME}.wav"
+        mv "$OUTPUT_PATH" "$NEW_WAV"
+        log_message "($$) - Silence removal disabled, file renamed: $NEW_WAV"
+    fi
 
-	# Check for required variables.
-	for var in "${required_vars[@]}"; do
-	  if [ -z "${!var}" ]; then
-	    echo "Error: Variable $var is not set in configuration file."
-	    exit 1
-	  fi
-	done
+    # Get file length duration
+    FILE_LENGTH=$(sox "$NEW_WAV" -n stat 2>&1 | grep 'Length' | cut -d ':' -f 2 | tr -d ' ')
 
-	# Initialization of local parameters.
-	FILE_NAME="${PREFIX}_$(date +%Y-%m-%d_%H-%M)_original.mp3"
-	OUTPUT_PATH="${DIR_WEB}/${FILE_NAME}"
-	PIDFILE="${DIR_PID}/recorder-${PREFIX}.pid"
-	LOGFILE="${DIR_LOG}/recorder-${PREFIX}.log"
+	AMPLITUDE_ADJUSTMENT_PROCESSED=$(sox "$NEW_WAV" -n stat 2>&1 | grep 'Maximum amplitude' | cut -d ':' -f 2 | tr -d ' ')
 
-	echo $$ > "$PIDFILE"
-	check_dependencies
-	[ ! -d "$DIR_WEB" ] && mkdir -p "$DIR_WEB"
-	log_message "($$) - #### Start of the recorder script for PID number $$ ####"
-	log_message "($$) - Start of audio stream recording for ${PREFIX}."
-	record_audio
+	AMPLITUDE_DB_PROCESSED=$(awk -v a="$AMPLITUDE_ADJUSTMENT_PROCESSED" \
+	'BEGIN { if (a<=0) printf "%.2f", -999; else printf "%.2f", 20*log(a)/log(10) }')
 
-	# Analyze the audio file with sox and extract the Volume adjustment information.
-	VOLUME_ADJUSTMENT=$(sox ${OUTPUT_PATH} -n stat 2>&1 | grep 'Volume adjustment' | cut -d ':' -f 2 | tr -d ' ')
-	log_message "($$) - Capturing Volume adjustment for ${PREFIX}: ${VOLUME_ADJUSTMENT}"
+	log_message "($$) - Max amplitude after silence removal (linear): $AMPLITUDE_ADJUSTMENT_PROCESSED"
+	log_message "($$) - Max amplitude after silence removal (dBFS): $AMPLITUDE_DB_PROCESSED"
 
-	# Analyze the audio file with sox and extract the Maximum amplitude information.
-	AMPLITUDE_ADJUSTMENT=$(sox ${OUTPUT_PATH} -n stat 2>&1 | grep 'Maximum amplitude' | cut -d ':' -f 2 | tr -d ' ')
-	log_message "($$) - Capturing Maximum amplitude for ${PREFIX}: ${AMPLITUDE_ADJUSTMENT}"
+    if (( $(echo "$FILE_LENGTH <= $SILENT_SOUND_DURATION" | bc -l) )); then
+        log_message "($$) - Processed file considered silent (<= ${SILENT_SOUND_DURATION}s)"
+        [ "$KEEP_PROCESSED_FILE" != "true" ] && rm -f "$NEW_WAV" && log_message "($$) - Silent processed file deleted: $NEW_WAV"
+        [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
+        log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
+        return
+    fi
 
-	# Analyze the audio file with sox and extract the file lengh information.
-	FILE_LENGTH=$(sox ${OUTPUT_PATH} -n stat 2>&1 | grep 'Length' | cut -d ':' -f 2 | tr -d ' ')
-	log_message "($$) - Capturing file duration: ${FILE_LENGTH}"
+    # Generate final MP3
+    FINAL_MP3="${PROCESSED_FILE_NAME}.mp3"
 
-	# Using id3v2 to set the Artist with the prefix.
-	ID3V2_CMD_OUTPUT=$(/usr/bin/id3v2 -a "$PREFIX" $OUTPUT_PATH 2>&1)
-	log_message "($$) - Registering Device: ${PREFIX}"
+    # Apply configurable gain if SOX_GAIN is set
+    if [ -n "$SOX_GAIN" ]; then
+	    sox "$NEW_WAV" -c 1 -t mp3 "$FINAL_MP3" rate "$RTSP_SAMPLE_RATE" gain $SOX_GAIN
+    else
+	    # No volume adjustment
+	    sox "$NEW_WAV" -c 1 -t mp3 "$FINAL_MP3" rate "$RTSP_SAMPLE_RATE"
+	    log_message "($$) - No volume adjustment from original stream to final MP3"
+    fi
 
-	# Using id3v2 to set the Album with the Maximum amplitude.
-	ID3V2_CMD_OUTPUT=$(/usr/bin/id3v2 -A "$AMPLITUDE_ADJUSTMENT" $OUTPUT_PATH 2>&1)
-	log_message "($$) - Registering Maximum amplitude for ${PREFIX}: ${AMPLITUDE_ADJUSTMENT}"
+    log_message "($$) - Final MP3 generated: $FINAL_MP3"
+    /usr/bin/id3v2 -a "$PREFIX" -A "$AMPLITUDE_ADJUSTMENT_PROCESSED" -T "$VOLUME_ADJUSTMENT" "$FINAL_MP3" 2>&1
+    log_message "($$) - Metadata applied to final MP3: $FINAL_MP3"
 
-	# Using id3v2 to set the Track with the Volume ajustement.
-	ID3V2_VOLUME_CMD_OUTPUT=$(/usr/bin/id3v2 -T "$VOLUME_ADJUSTMENT" $OUTPUT_PATH 2>&1)
-	log_message "($$) - Registering Volume adjustment for ${PREFIX}: ${VOLUME_ADJUSTMENT}"
+    [ "$KEEP_PROCESSED_FILE" != "true" ] && rm -f "$NEW_WAV" && log_message "($$) - Processed WAV deleted: $NEW_WAV"
+    [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
+    log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
 
-	# Delete the file if $AMPLITUDE_ADJUSTMENT is smaller than $INPUT_THRESHOLD.
-		if (( $(echo "$AMPLITUDE_ADJUSTMENT < $INPUT_THRESHOLD" | bc -l) )); then
-			log_message "($$) - The adjustment volume ${AMPLITUDE_ADJUSTMENT} is below the threshold ${INPUT_THRESHOLD}."
+    send_file_email
 
-		    if [ "$KEEP_ORIGINAL" != "true" ]; then
-				rm "$OUTPUT_PATH"
-		        log_message "($$) - Original sound file deleted: $OUTPUT_PATH"
-		    else
-		        log_message "($$) - Original sound file preserved by configuration."
-		    fi
-
-	else
-		# Process recorded audio file
-		if [ "$REMOVE_SILENCE" = true ]; then
-			# Remove silences using SoX
-			PROCESSED_FILE_NAME="${OUTPUT_PATH%_original.mp3}"
-			PROCESSED_OUTPUT_PATH="${PROCESSED_FILE_NAME}_silence.mp3"
-			SOX_CMD_RUN="sox \"$OUTPUT_PATH\" \"$PROCESSED_OUTPUT_PATH\" $SOX_CMD"
-			log_message "($$) - Executing SoX to remove silences: $SOX_CMD_RUN"
-
-			eval $SOX_CMD_RUN
-
-			# Check if SoX succeeded and the processed file exists
-			if [ $? -eq 0 ] && [ -f "$PROCESSED_OUTPUT_PATH" ]; then
-				log_message "($$) - Silence removal completed successfully: $PROCESSED_OUTPUT_PATH"
-
-				# Rename processed file by removing "_silence" suffix
-				NEW_PROCESSED_OUTPUT_PATH="${PROCESSED_FILE_NAME}.mp3"
-				mv "$PROCESSED_OUTPUT_PATH" "$NEW_PROCESSED_OUTPUT_PATH"
-
-				# Get processed file duration
-				if [ -f "$NEW_PROCESSED_OUTPUT_PATH" ]; then
-					FILE_LENGTH=$(sox "$NEW_PROCESSED_OUTPUT_PATH" -n stat 2>&1 | grep 'Length' | cut -d ':' -f 2 | tr -d ' ')
-				else
-					FILE_LENGTH=0
-				fi
-				log_message "($$) - Processed file duration: $FILE_LENGTH s"
-
-				# Handle files that are effectively silent
-				if (( $(echo "$FILE_LENGTH <= $SILENT_SOUND_DURATION" | bc -l) )); then
-					log_message "($$) - Processed file considered silent (<= ${SILENT_SOUND_DURATION}s)."
-
-					if [ "$KEEP_PROCESSED_FILE" = "true" ]; then
-						log_message "($$) - KEEP_PROCESSED_FILE=true, so the silent processed file will be preserved: $NEW_PROCESSED_OUTPUT_PATH"
-					else
-						log_message "($$) - KEEP_PROCESSED_FILE=false, deleting the silent processed file: $NEW_PROCESSED_OUTPUT_PATH"
-						rm -f "$NEW_PROCESSED_OUTPUT_PATH"
-						log_message "($$) - Silent processed file deleted successfully: $NEW_PROCESSED_OUTPUT_PATH"
-					fi
-
-					# Delete original file if not required
-					if [ "$KEEP_ORIGINAL" != "true" ]; then
-						log_message "($$) - KEEP_ORIGINAL not true, deleting original file: $OUTPUT_PATH"
-						rm -f "$OUTPUT_PATH"
-						log_message "($$) - Original file deleted: $OUTPUT_PATH"
-					else
-						log_message "($$) - KEEP_ORIGINAL=true, original file preserved: $OUTPUT_PATH"
-					fi
-
-					# Do not send email for silent-only files
-					return
-				fi
-
-				# File contains sound, update metadata and optionally delete original
-				/usr/bin/id3v2 -a "$PREFIX" "$NEW_PROCESSED_OUTPUT_PATH" 2>&1
-				/usr/bin/id3v2 -T "$VOLUME_ADJUSTMENT" "$NEW_PROCESSED_OUTPUT_PATH" 2>&1
-				log_message "($$) - Metadata updated for processed file: $NEW_PROCESSED_OUTPUT_PATH"
-
-				# Delete original file if configuration specifies
-				if [ "$KEEP_ORIGINAL" != "true" ]; then
-					rm -f "$OUTPUT_PATH"
-					log_message "($$) - Original file deleted: $OUTPUT_PATH"
-				else
-					log_message "($$) - Original file preserved: $OUTPUT_PATH"
-				fi
-
-				# Send notification email for files containing sound
-				send_file_email
-
-			else
-				# SoX failed or processed file missing
-				send_error_email
-				rm -f "$PROCESSED_OUTPUT_PATH"
-				if [ "$KEEP_ORIGINAL" != "true" ]; then
-					rm -f "$OUTPUT_PATH"
-					log_message "($$) - Original file deleted after processing failure: $OUTPUT_PATH"
-				else
-					log_message "($$) - Original file preserved after processing failure: $OUTPUT_PATH"
-				fi
-			fi
-
-		else
-			# Silence removal disabled
-			NEW_OUTPUT_PATH="${OUTPUT_PATH%_original.mp3}.mp3"
-			mv "$OUTPUT_PATH" "$NEW_OUTPUT_PATH"
-			log_message "($$) - Silence removal disabled, file renamed: $NEW_OUTPUT_PATH"
-
-			# Send notification email for all recorded files
-			send_file_email
-		fi
-	fi
-
-	# Read the PID from the PIDFILE, if it exists
-	if [ -f "$PIDFILE" ]; then
-		read -r PIDFILE_ID < "$PIDFILE"
-	else
-		log_message "($$) - The PID file ($PIDFILE) does not exist or is inaccessible."
-		PIDFILE_ID=""
-	fi
-
-	# Check if the read PID is the same as the currently executing script's PID ($$)
-	# Allows to do not destroy the PID file if another instance has already started while the current process is not yet finished.
-	if [ "$PIDFILE_ID" = "$$" ]; then
-		rm -f "$PIDFILE"
-		log_message "($$) - PID file deleted ($$): $PIDFILE"
-	else
-    	log_message "($$) - Warning: The script's PID ($$) does not match the PID read ($PIDFILE_ID) in $PIDFILE. Deletion of the PID file cancelled."
-	fi
+    if [ -f "$PIDFILE" ]; then
+        read -r PIDFILE_ID < "$PIDFILE"
+        [ "$PIDFILE_ID" = "$$" ] && { rm -f "$PIDFILE"; log_message "($$) - PID file deleted: $PIDFILE"; } \
+        || log_message "($$) - Warning: PID ($$) != PID file ($PIDFILE_ID), PID file not deleted."
+    fi
 }
 
-# Execute the main function.
 main "$@"

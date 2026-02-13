@@ -1,9 +1,23 @@
 # Changelog recorder script
 
+Version [3.2.0] (13-02-2026)
+
+- RTSP_BITE_RATE variable renamed RTSP_BIT_RATE in conf file.
+- Modified SOX_CMD in conf file.
+- Added optional SOX_GAIN variable in conf file.
+- The streaming audio is now recorded in WAV format instead of MP3 to avoid loss during handling and processing. 
+  The conversion to MP3 is done at the last moment.
+- MP3 Metadata: Fixed _original.mp3 tag writing with id3v2.
+- Audio Processing: Improved silence removal, amplitude checks, and optional gain application.
+- Email Notifications: Enhanced formatting, duration calculation, and download link generation.
+- Robustness & Logging: Added numeric checks, better error handling, detailed logs, and safe PID management.
+- Temporary Files: Automatic cleanup of temp directories after recording.
+
 Version [3.1.4] (10-02-2026)
 
 - DELETE_ORIGINAL variable renamed KEEP_ORIGINAL in conf file.
-- Added KEEP_PROCESSED_FILE variable in conf file. Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
+- Added KEEP_PROCESSED_FILE variable in conf file. 
+  Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
 - Added missing tests for KEEP_ORIGINAL.
 - Added tests for KEEP_PROCESSED_FILE.
 - Better managment in case of errors with SOX command.
