@@ -297,8 +297,11 @@ main() {
     /usr/bin/id3v2 -a "$PREFIX" -A "$AMPLITUDE_ADJUSTMENT_PROCESSED" -T "$VOLUME_ADJUSTMENT" "$FINAL_MP3" 2>&1
     log_message "($$) - Metadata applied to final MP3: $FINAL_MP3"
 
-	rm -f "$NEW_WAV"
-	log_message "($$) - Processed WAV deleted: $NEW_WAV"
+    # Remove temporary/original files
+    rm -f "$OUTPUT_PATH"
+    log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
+    rm -f "$NEW_WAV"
+    log_message "($$) - Processed WAV deleted: $NEW_WAV"
 
     send_file_email
 
