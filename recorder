@@ -3,8 +3,8 @@
 # recorder -- Wrapper to pull remote audio stream and convert contents to mp3
 # Supports Axis P8221, AXIS C8110 soundbox, or any RTSP device with audio output
 #
-# v3.2.0
-# Date: 13/02/2026
+# v3.2.1
+# Date: 15/02/2026
 # Copyright (C) 2024-2026 by Stef
 
 # Usage: ./recorder
@@ -100,7 +100,7 @@ log_message() {
 }
 
 check_dependencies() {
-    local deps=("cvlc" "sox" "id3v2" "bc" "awk")
+    local deps=("cvlc" "sox" "id3v2" "bc" "awk" "mail" "sed" "grep" "cut" "tr")
     for cmd in "${deps[@]}"; do
         if ! command -v $cmd &> /dev/null; then
             log_message "($$) - ERROR: $cmd is not installed."
@@ -156,15 +156,14 @@ main() {
     [ ! -f "$CONFIG_FILE" ] && { echo "Configuration file ($CONFIG_FILE) not found."; exit 1; }
     source "$CONFIG_FILE"
 
-    if ! printf '%s\n' "$SILENT_SOUND_DURATION" | grep -Eq '^[0-9]+([.][0-9]+)?$'; then
-	log_message "($$) - ERROR: SILENT_SOUND_DURATION is not numeric"
+    if ! printf '%s\n' "$MIN_VALID_SOUND_DURATION" | grep -Eq '^[0-9]+([.][0-9]+)?$'; then
+	log_message "($$) - ERROR: MIN_VALID_SOUND_DURATION is not numeric"
 	exit 1
     fi
 
     required_vars=(LANG PREFIX URL_SERVER RTSP_URL RTSP_SAMPLE_RATE RTSP_BIT_RATE RTSP_USER
     RTSP_PASSWORD DIR_WEB DIR_LOG DIR_PID DIR_TEMPLATE EMAIL_FROM EMAIL_TO EMAIL_TO_SUPPORT
-    INPUT_THRESHOLD DURATION SILENT_SOUND_DURATION SOX_CMD KEEP_ORIGINAL REMOVE_SILENCE
-    KEEP_PROCESSED_FILE)
+    INPUT_THRESHOLD DURATION MIN_VALID_SOUND_DURATION SOX_CMD KEEP_ORIGINAL REMOVE_SILENCE)
 
     for var in "${required_vars[@]}"; do
       [ -z "${!var}" ] && { echo "Error: Variable $var is not set in configuration file."; exit 1; }
@@ -207,7 +206,7 @@ main() {
 	        log_message "($$) - ERROR: Failed to generate temporary MP3 for id3v2"
 	        send_error_email
 	    else
-	        # Step 2: compute amplitude only on non-silence portions (pseudo)
+	        # Step 2: compute maximum amplitude over the full original signal (silence included)
 	        # This requires Sox v14+; here we use trim/silence trick for active audio
 	        AMP_ACTIVE=$(sox "$OUTPUT_PATH" -n stat 2>&1 | awk -F: '/Maximum amplitude/ {gsub(/ /,"",$2); print $2}')
 
@@ -234,7 +233,7 @@ main() {
 	    fi
 	fi
 
-    # Skip file if amplitude below threshold
+    # Early discard: ignore recordings whose original signal peak is below the input threshold
     if (( $(echo "$AMPLITUDE_ADJUSTMENT < $INPUT_THRESHOLD" | bc -l) )); then
         log_message "($$) - Amplitude ${AMPLITUDE_ADJUSTMENT} below threshold ${INPUT_THRESHOLD}, ignoring file."
         [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
@@ -275,11 +274,10 @@ main() {
 	log_message "($$) - Max amplitude after silence removal (linear): $AMPLITUDE_ADJUSTMENT_PROCESSED"
 	log_message "($$) - Max amplitude after silence removal (dBFS): $AMPLITUDE_DB_PROCESSED"
 
-    if (( $(echo "$FILE_LENGTH <= $SILENT_SOUND_DURATION" | bc -l) )); then
-        log_message "($$) - Processed file considered silent (<= ${SILENT_SOUND_DURATION}s)"
-        [ "$KEEP_PROCESSED_FILE" != "true" ] && rm -f "$NEW_WAV" && log_message "($$) - Silent processed file deleted: $NEW_WAV"
-        [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
-        log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
+    if (( $(echo "$FILE_LENGTH <= $MIN_VALID_SOUND_DURATION" | bc -l) )) && \
+    (( $(echo "$AMPLITUDE_ADJUSTMENT_PROCESSED < $INPUT_THRESHOLD" | bc -l) )); then
+        log_message "($$) - Processed file too short and too quiet, deleting."
+        rm -f "$NEW_WAV"
         return
     fi
 
@@ -299,9 +297,8 @@ main() {
     /usr/bin/id3v2 -a "$PREFIX" -A "$AMPLITUDE_ADJUSTMENT_PROCESSED" -T "$VOLUME_ADJUSTMENT" "$FINAL_MP3" 2>&1
     log_message "($$) - Metadata applied to final MP3: $FINAL_MP3"
 
-    [ "$KEEP_PROCESSED_FILE" != "true" ] && rm -f "$NEW_WAV" && log_message "($$) - Processed WAV deleted: $NEW_WAV"
-    [ -f "$OUTPUT_PATH" ] && rm -f "$OUTPUT_PATH"
-    log_message "($$) - Original WAV deleted: $OUTPUT_PATH"
+	rm -f "$NEW_WAV"
+	log_message "($$) - Processed WAV deleted: $NEW_WAV"
 
     send_file_email
 
