@@ -2,7 +2,7 @@
 
 Version [3.2.1] (15-02-2026)
 
-- Modified wrong SoX command: SOX_CMD="silence -l 1 0.5 -50dB -1 3.0 -50dB"
+- Modified SoX command: SOX_CMD="silence -l 1 0.5 -50dB -1 3.0 -50dB"
 - Removed KEEP_PROCESSED_FILE variable.
 - SILENT_SOUND_DURATION variable renamed MIN_VALID_SOUND_DURATION.
 
