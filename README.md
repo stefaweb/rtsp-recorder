@@ -34,9 +34,8 @@ Here are the main parameters to configure:
 - `EMAIL_FROM`, `EMAIL_TO`, `EMAIL_TO_SUPPORT`: Email addresses of the sender and recipient for notifications and error messages.
 - `INPUT_THRESHOLD`: Parameter for adjusting the trigger threshold.
 - `DURATION`: Recording duration (in seconds).
-- `SILENT_SOUND_DURATION`: Allows you to define the minimum duration of the silent sound file to keep (in seconds).
+- `MIN_VALID_SOUND_DURATION`: Allows you to define the minimum duration of the silent sound file to keep (in seconds).
 - `KEEP_ORIGINAL`: Parameter to keep original sound file.
-- `KEEP_PROCESSED_FILE`: Parameter to keep silenced sound file. Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
 - `REMOVE_SILENCE` : Parameter to remove silences from sound file
 - `SOX_CMD`: SoX command parameter to remove silences in MP3 files.
 - `SOX_GAIN`: Gain applied by SoX during final MP3 conversion (Value in dB).
