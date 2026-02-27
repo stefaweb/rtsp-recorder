@@ -1,5 +1,14 @@
 # Changelog recorder script
 
+Version [3.2.2] (27/02/2026)
+
+- Added configurable startup silence (STARTUP_SILENCE_SEC) at the beginning of the final MP3 file.
+- Introduced early discard of recordings below amplitude threshold to avoid empty files.
+- Validates configuration variables for numeric and required fields.
+- Minor log improvements and amplitude calculations in dBFS for processed audio.
+- Modified SoX command: SOX_CMD="silence -l 1 0.3 -45dB -1 4.0 -45dB"
+- Modified default config file template.
+
 Version [3.2.1] (15-02-2026)
 
 - Modified SoX command: SOX_CMD="silence -l 1 0.5 -50dB -1 3.0 -50dB"
