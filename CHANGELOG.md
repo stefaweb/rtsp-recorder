@@ -2,7 +2,7 @@
 
 Version [3.2.2] (27/02/2026)
 
-- Added configurable startup silence (STARTUP_SILENCE_SEC) at the beginning of the final MP3 file.
+- Added configurable startup silence (STARTUP_SILENCE_SEC=1) at the beginning of the final MP3 file.
 - Introduced early discard of recordings below amplitude threshold to avoid empty files.
 - Validates configuration variables for numeric and required fields.
 - Minor log improvements and amplitude calculations in dBFS for processed audio.
