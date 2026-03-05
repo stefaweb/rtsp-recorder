@@ -1,5 +1,16 @@
 # Changelog recorder script
 
+Version [3.2.3] (05/03/2026)
+
+- Multilingual handling of error and notification emails with fallback to English.
+- Improved amplitude precision in emails (%.3f).
+- Secure temporary XDG_RUNTIME_DIR with strict permissions.
+- Detailed logging for each recording attempt and cleanup of temporary directories.
+- Enhanced validation of numeric values and removal of files that are too short or too quiet.
+- Unified MP3 conversion with consistent gain and startup silence application.
+- Full logging of amplitudes and ID3 metadata.
+- Conditional preservation of original files when KEEP_ORIGINAL=true.
+
 Version [3.2.2] (27/02/2026)
 
 - Added configurable startup silence (STARTUP_SILENCE_SEC=1) at the beginning of the final MP3 file.
