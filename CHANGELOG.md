@@ -1,9 +1,99 @@
-https://x.com/i/status/2029553884834742455
+# Changelog recorder script
 
+Version [3.2.3] (05/03/2026)
 
+- Multilingual handling of error and notification emails with fallback to English.
+- Improved amplitude precision in emails (%.3f).
+- Secure temporary XDG_RUNTIME_DIR with strict permissions.
+- Detailed logging for each recording attempt and cleanup of temporary directories.
+- Enhanced validation of numeric values and removal of files that are too short or too quiet.
+- Unified MP3 conversion with consistent gain and startup silence application.
+- Full logging of amplitudes and ID3 metadata.
+- Conditional preservation of original files when KEEP_ORIGINAL=true.
 
+Version [3.2.2] (27/02/2026)
 
+- Added configurable startup silence (STARTUP_SILENCE_SEC=1) at the beginning of the final MP3 file.
+- Introduced early discard of recordings below amplitude threshold to avoid empty files.
+- Validates configuration variables for numeric and required fields.
+- Minor log improvements and amplitude calculations in dBFS for processed audio.
+- Modified SoX command: SOX_CMD="silence -l 1 0.3 -45dB -1 4.0 -45dB"
+- Modified default config file template.
 
-RTSP Recorder script
+Version [3.2.1] (15-02-2026)
 
-audio  rtsp  recorder  ffmpeg python musicindex axis-p8221  axis-c8110
+- Modified SoX command: SOX_CMD="silence -l 1 0.5 -50dB -1 3.0 -50dB"
+- Removed KEEP_PROCESSED_FILE variable.
+- SILENT_SOUND_DURATION variable renamed MIN_VALID_SOUND_DURATION.
+
+Version [3.2.0] (13-02-2026)
+
+- RTSP_BITE_RATE variable renamed RTSP_BIT_RATE in conf file.
+- Modified SOX_CMD in conf file.
+- Added optional SOX_GAIN variable in conf file.
+- The streaming audio is now recorded in WAV format instead of MP3 to avoid loss during handling and processing. 
+  The conversion to MP3 is done at the last moment.
+- MP3 Metadata: Fixed _original.mp3 tag writing with id3v2.
+- Audio Processing: Improved silence removal, amplitude checks, and optional gain application.
+- Email Notifications: Enhanced formatting, duration calculation, and download link generation.
+- Robustness & Logging: Added numeric checks, better error handling, detailed logs, and safe PID management.
+- Temporary Files: Automatic cleanup of temp directories after recording.
+
+Version [3.1.4] (10-02-2026)
+
+- DELETE_ORIGINAL variable renamed KEEP_ORIGINAL in conf file.
+- Added KEEP_PROCESSED_FILE variable in conf file. 
+  Warning: this option may generate unreadable empty audio file if the original audio file contains only silence.
+- Added missing tests for KEEP_ORIGINAL.
+- Added tests for KEEP_PROCESSED_FILE.
+- Better managment in case of errors with SOX command.
+
+Version [3.1.3] (9-03-2024)
+
+- Localization in German language for Email Subject and Body templates (.de).
+- Added a routine to check the configuration file.
+
+Version [3.1.2] (8-03-2024)
+
+- For VLC, added XDG_RUNTIME_DIR definition to suppress warning messages during cvlc starting.
+- Added PID number stamp in log_message.
+- Update of musicindex.css.
+
+Version [3.1.1] (5-03-2024)
+
+- Added sound file duration in email template.
+- Update of musicindex.css.
+- Directory email_templates has been renamed to recorder_templates.
+- Localization in English and French for Email Subject and Body templates.
+- Added LANG parameter in recorder.conf.
+- Added Content-Type to mail header.
+- Localization in English of log_message and internal messages.
+- Localization of minutes and seconds in body message.
+- Added SILENT_SOUND_DURATION parameter in recorder.conf. Allows to define the minimum duration of the silent sound file to keep.
+
+Version [3.1.0] (2-03-2024)
+
+- Added SOX_CMD parameter in recorder.conf.
+- Added EMAIL_TO_SUPPORT parameter. Error message will be sent to this email.
+- Added DIR_WEB, DIR_LOG, DIR_PID= and DIR_TEMPLATE parameters.
+- Update of musicindex.css and musicindex.conf.
+- Changed naming structure of sound file name.
+- Fixed a bug in deleting the silence file.
+- README.md in US and FR language.
+- email_template directory renamed recorder_templates.
+
+Version [3.0.8] (1-03-2024)
+
+- Update of musicindex.css and musicindex.conf files.
+- Change of AMPLITUDE_ADJUSTMENT_SHORT in mail message to reduce number du 3 digits.
+
+Version [3.0.7] (29-02-2024)
+
+- INPUT_THRESHOLD now use sox "Maximum amplitude" tag to manage threshold.
+- Using id3v2 to set the Artist with the prefix.
+- Using id3v2 to set the Track with the volume ajustement.
+- Added customized musicindex.css and musicindex.conf for Apache Musicindex module.
+
+Version [3.0.6] (28-02-2024)
+
+- Initial version.
