@@ -1,6 +1,10 @@
 [![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/stefaweb/rtsp-recorder-dev/tree/main)
 [![fr](https://img.shields.io/badge/lang-fr-yellow.svg)](https://github.com/stefaweb/rtsp-recorder-dev/blob/main/README.fr.md)
 
+The RTSP Recorder Script is not longer developed. Have a look at the new RTSP Audio Event Recorder script here:
+
+https://github.com/stefaweb/rtsp-audio-event-recorder
+
 # RTSP Recorder Script
 
 The `recorder` script is designed for recording RTSP audio streams, especially from devices like the AXIS C8110 or P8221 audio recorder, and converting them into MP3 files. It also features functionalities for adjusting the trigger threshold, silencing removal, and sending email notifications.
